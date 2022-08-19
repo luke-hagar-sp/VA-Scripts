@@ -1,9 +1,9 @@
 #!/bin/bash
 
-VERSION="v0.7"
+VERSION="v0.8"
 LOGFILE=/home/sailpoint/stuntlog.txt
 DATE=$(date -u +"%b_%d_%y-%H:%M")
-DIVIDER="==========================================================================="
+DIVIDER="================================================================================"
 
 if [[ -e "/home/sailpoint/config.yaml" ]]; then
   orgname=$(awk '/org/' /home/sailpoint/config.yaml | sed 's/org: //' | sed 's/\r$//') &&
@@ -21,15 +21,16 @@ help () {
   echo "VA, and places that data into a stuntlog.txt file. Collecting this helps"
   echo "SailPoint Cloud Support Engineers troubleshoot your system."
   echo
-  echo "Syntax: ./stunt.sh [-h] [-t|p]"
+  echo "Syntax: ./stunt.sh [-h] [-t|p|u]"
   echo "Options:"
   echo "h   Print this help info and exit"
   echo "t   Add tracepath test"
   echo "p   Add ping test"
+  echo "u   Perform forced update (this will make system changes)"
 }
 
 # Get cmd line args
-while getopts ":htp" option; do
+while getopts ":htpu" option; do
   case $option in
     h) #display help
       help
@@ -38,6 +39,8 @@ while getopts ":htp" option; do
       do_tracepath=true;;
     p)
       do_ping=true;;
+    u)
+      do_update=true;;
     \?) 
       echo "Invalid argument on command line. Please review help with ./stunt.sh -h"
       exit;;
@@ -51,6 +54,7 @@ echo "*** This script tests network connectivity, gathers log/system data,"
 echo "*** performs recommended setup steps from the SailPoint VA documents which"
 echo "*** when skipped will cause network connectivity problems, and creates a"
 echo "*** log file at ${LOGFILE}."
+echo "*** No warranty is expressed or implied for this tool by SailPoint."
 echo 
 
 # Global vars for functions
@@ -78,9 +82,9 @@ outro () {
 }
 
 lookFor() {
-  echo "***************************************************************************" >> $LOGFILE
+  echo "********************************************************************************" >> $LOGFILE
   echo "*** Look for $1" >> $LOGFILE
-  echo "***************************************************************************" >> $LOGFILE
+  echo "********************************************************************************" >> $LOGFILE
 }
 
 if test -f "$LOGFILE"; then
@@ -115,8 +119,50 @@ lookFor "this section to contain 'Flatcar' and not 'CoreOS'."
 uname -a >> $LOGFILE
 outro
 
+intro "Getting OpenJDK version from ccg" "grep -i openjdk ~/log/worker.log"
+lookFor "this version of java to be 11.0.14 or higher and not 1.8.x: openjdk version '11.0.14' 2022-01-18"
+grep -a openjdk /home/sailpoint/log/worker.log | tail -1 >> $LOGFILE
+outro
+
+if test -f /etc/profile.env; then
+  intro "Getting profile.env" "cat /etc/profile.env"
+  lookFor "existence of the file. May need to remove it if proxying is an issue."
+  cat /etc/profile.env 1>> $LOGFILE 2>> $LOGFILE
+  outro
+fi
+
+if test -f /etc/systemd/system.conf.d/10-default-env.conf; then
+  intro "Getting 10-default-env.conf" "cat /etc/systemd/system.conf.d/10-default-env.conf"
+  lookFor "existence of the file. May need to remove it if proxying is an issue."
+  cat /etc/systemd/system.conf.d/10-default-env.conf 1>> $LOGFILE 2>> $LOGFILE
+  outro
+fi
+
+intro "Getting docker.env" "cat /home/sailpoint/docker.env"
+lookFor "proxy references in docker.env. Remove references to proxy if they're in this file and proxying is an issue."
+cat /home/sailpoint/docker.env >> $LOGFILE
+outro
+
+if test -f /etc/systemd/network/static.network; then
+  intro "Getting the static.network file" "cat /etc/systemd/network/static.network"
+  lookFor "existence of the file. If so, individual DNS entries should be on separate lines beginning with 'DNS'."
+  cat /etc/systemd/network/static.network >> $LOGFILE
+  outro
+fi
+
+intro "Getting the resolv.conf file" "cat /etc/resolv.conf"
+lookFor "DNS entries to match those in static.network, if it exists."
+cat /etc/resolv.conf >> $LOGFILE
+outro
+
+if test -f /home/sailpoint/proxy.yaml; then
+  intro "Getting the proxy config" "cat /home/sailpoint/proxy.yaml"
+  cat /home/sailpoint/proxy.yaml >> $LOGFILE
+  outro
+fi
+
 intro "Getting /etc/os-release info" "cat /etc/os-release"
-lookFor "'NAME=\"Flatcar Container Linux by Kinvolk\"'. Check that version is semi-recent: https://www.flatcar.org/releases#stable-release"
+lookFor "'NAME=Flatcar Container Linux by Kinvolk'. Check that version is >= 3227.*.*. If lower, run ./stunt.sh -u and reboot after."
 cat /etc/os-release >> $LOGFILE
 outro
 
@@ -126,7 +172,7 @@ lscpu >> $LOGFILE
 outro
 
 intro "Getting total RAM" "free"
-lookFor "the RAM to be >= 8GB. This is from AWS m4.large specs."
+lookFor "the RAM to be >= 7.3Gi (approx 8GB). This is from AWS m4.large specs."
 free -h >> $LOGFILE
 outro
 
@@ -141,12 +187,13 @@ grep -a "Networking check" /home/sailpoint/log/charon.log | tail -1 >> $LOGFILE
 outro
 
 intro "This step disables esx_dhcp_bump" "Disable esx_dhcp_bump"
-sudo systemctl disable esx_dhcp_bump >> $LOGFILE
+lookFor "any output stating this was removed/disabled. If there is, be sure to do a sudo reboot."
+sudo systemctl disable esx_dhcp_bump 1>> $LOGFILE 2>> $LOGFILE
 outro
 
 intro "External connectivity: Connection test for SQS (https://sqs.us-east-1.amazonaws.com)"
 lookFor "a result of 404"
-curl -i https://sqs.us-east-1.amazonaws.com 2> /dev/null >> $LOGFILE
+curl -i -vv https://sqs.us-east-1.amazonaws.com 2> /dev/null >> $LOGFILE
 outro
 
 intro "External connectivity: Connection test for $orgname.identitynow.com"
@@ -187,6 +234,7 @@ outro
 
 intro "Getting ccg.log - errors only" "ccg.log - 30 error lines"
 lookFor "datestamps. Some logs might be very old and no longer pertinent."
+lookFor "any error that says keystore.jks is missing or cannot be found; usually the keyPassphrase in config.yaml does not match the initial setting"
 cat ./log/ccg.log | grep stacktrace | tail -n30 >> $LOGFILE
 outro
 
@@ -211,6 +259,7 @@ df -h >> $LOGFILE
 outro
 
 intro "Getting jobs list" "ls -l /opt/sailpoint/share/jobs/"
+lookFor "this to be (almost) empty. If lots of jobs are > 1 week old, run: sudo rm -rf /opt/sailpoint/share/jobs/* && sudo reboot"
 ls -l /opt/sailpoint/share/jobs/ >> $LOGFILE
 outro
 
@@ -240,6 +289,15 @@ if [ "$is_canal_enabled" = true ]; then
 
   intro "Getting last 50 lines of canal service journal logs" "canal service journal logs"
   sudo journalctl -n50 -u canal  >> $LOGFILE 
+  outro
+fi
+
+if [ "$do_update" = true ]; then
+  intro "Performing forced update - this process resets the machine-id and the update service. *REBOOTS ARE REQUIRED WHEN SUCCESSFUL*" "Forced update logs"
+  sudo rm -f /etc/machine-id  1>> $LOGFILE 2>> $LOGFILE
+  sudo systemd-machine-id-setup  1>> $LOGFILE 2>> $LOGFILE
+  sudo systemctl restart update-engine  1>> $LOGFILE 2>> $LOGFILE
+  sudo update_engine_client -update 1>> $LOGFILE 2>> $LOGFILE
   outro
 fi
 
