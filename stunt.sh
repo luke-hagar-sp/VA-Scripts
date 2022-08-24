@@ -103,9 +103,7 @@ checkResponse() {
   else
     commandOutput+=("$3 Test Failed")
   fi
-  echo "********************************************************************************" >> $LOGFILE
-  echo "*** Look for $4" >> $LOGFILE
-  echo "********************************************************************************" >> $LOGFILE
+  lookFor $4
   echo $1 >> $LOGFILE
 }
 
