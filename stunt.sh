@@ -324,6 +324,8 @@ fi
 echo "$(date -u) - END TESTS for $orgname on $podname " >> $LOGFILE
 echo >&2 "*** Tests completed on $(date -u) ***
 
+echo ${commandOutput[@]}.
+
 $DIVIDER
 PLEASE RETRIEVE ${LOGFILE} AND UPLOAD TO YOUR CASE
 $DIVIDER"
