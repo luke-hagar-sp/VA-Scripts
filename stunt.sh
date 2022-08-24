@@ -1,4 +1,8 @@
 #!/bin/bash
+#Testing 
+# /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/luke-hagar-sp/VA-Scripts/dev/stunt.sh)"
+#Prod 
+# /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/luke-hagar-sp/VA-Scripts/main/stunt.sh)"
 
 VERSION="v0.8"
 LOGFILE=/home/sailpoint/stuntlog.txt
