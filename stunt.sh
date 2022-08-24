@@ -97,7 +97,7 @@ function lookFor() {
 # $3 == Description of the test
 # $4 == original look for message, to preserve the log file structure
 checkResponse() {
-  result=$( grep -e "$2" "$1" )
+  result=`grep -e "$2" "$1"`
   if [ -n "$result" ]; then
     commandOutput+=("$3 Test Succeeded")
   else
