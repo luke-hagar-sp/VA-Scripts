@@ -59,7 +59,7 @@ echo
 
 # Global vars for functions
 is_canal_enabled=false
-
+commandOutput=("Start")
 # Functions
 
 # args:
@@ -85,6 +85,22 @@ lookFor() {
   echo "********************************************************************************" >> $LOGFILE
   echo "*** Look for $1" >> $LOGFILE
   echo "********************************************************************************" >> $LOGFILE
+}
+
+# args:
+# $1 == output of the command you are testing, use `command` format
+# $2 == pattern that means success
+# $3 == Description of the test
+# $4 == original look for message, to preserve the log file structure
+checkResponse() {
+  result=$( grep -e "$2" $1 )
+  if [ -n "$result" ]; then
+      commandOutput+="$3 Test Succeeded"
+  else
+      commandOutput+="$3 Test Failed"
+  fi
+  lookFor $4
+  $1 >> $LOGFILE
 }
 
 if test -f "$LOGFILE"; then
@@ -115,8 +131,7 @@ cat config.yaml | sed "s/keyPassphrase:.*/keyPassphrase: <redacted>/g" >> $LOGFI
 outro
 
 intro "Getting OS version" "OS version with uname"
-lookFor "this section to contain 'Flatcar' and not 'CoreOS'."
-uname -a >> $LOGFILE
+checkResponse `uname -a` "Flatcar" "Valdiating OS is Flatcar" "this section to contain 'Flatcar' and not 'CoreOS'."
 outro
 
 intro "Getting OpenJDK version from ccg" "grep -i openjdk ~/log/worker.log"
