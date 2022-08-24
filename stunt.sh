@@ -85,7 +85,7 @@ outro () {
   echo
 }
 
-function lookFor() {
+lookFor() {
   echo "********************************************************************************" >> $LOGFILE
   echo "*** Look for $1" >> $LOGFILE
   echo "********************************************************************************" >> $LOGFILE
@@ -97,13 +97,15 @@ function lookFor() {
 # $3 == Description of the test
 # $4 == original look for message, to preserve the log file structure
 checkResponse() {
-  result=`grep -e "$2" "$1"`
+  result=$(grep -e "$2" "$1")
   if [ -n "$result" ]; then
     commandOutput+=("$3 Test Succeeded")
   else
     commandOutput+=("$3 Test Failed")
   fi
-  lookFor $4 
+  echo "********************************************************************************" >> $LOGFILE
+  echo "*** Look for $4" >> $LOGFILE
+  echo "********************************************************************************" >> $LOGFILE
   $1 >> $LOGFILE
 }
 
