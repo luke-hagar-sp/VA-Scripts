@@ -97,6 +97,10 @@ lookFor() {
 # $3 == Description of the test
 # $4 == original look for message, to preserve the log file structure
 checkResponse() {
+  echo $1
+  echo $2
+  echo $3
+  echo $4
   result=$(grep -e "$2" "$1")
   echo $result
   if [ -n "$result" ]; then
