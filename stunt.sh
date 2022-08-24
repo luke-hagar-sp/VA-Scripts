@@ -136,7 +136,7 @@ cat config.yaml | sed "s/keyPassphrase:.*/keyPassphrase: <redacted>/g" >> $LOGFI
 outro
 
 intro "Getting OS version" "OS version with uname"
-checkResponse `uname -a` "Flatcar" "Valdiating OS is Flatcar" "this section to contain 'Flatcar' and not 'CoreOS'."
+checkResponse `uname -a` "NAME=Flatcar Container Linux by Kinvolk" "Valdiating OS is Flatcar" "this section to contain 'Flatcar' and not 'CoreOS'."
 outro
 
 intro "Getting OpenJDK version from ccg" "grep -i openjdk ~/log/worker.log"
