@@ -103,8 +103,8 @@ checkResponse() {
   else
     commandOutput+=("$3 Test Failed")
   fi
-  lookFor $4
-  echo $1 >> $LOGFILE
+  lookFor "$4"
+  echo "$1" >> $LOGFILE
 }
 
 if test -f "$LOGFILE"; then
