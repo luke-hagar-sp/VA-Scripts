@@ -85,7 +85,7 @@ outro () {
   echo
 }
 
-lookFor() {
+function lookFor() {
   echo "********************************************************************************" >> $LOGFILE
   echo "*** Look for $1" >> $LOGFILE
   echo "********************************************************************************" >> $LOGFILE
@@ -103,7 +103,7 @@ checkResponse() {
   else
       $commandOutput+="$3 Test Failed"
   fi
-  lookFor $4
+  lookFor $4 
   $1 >> $LOGFILE
 }
 
