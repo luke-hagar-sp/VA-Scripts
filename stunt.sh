@@ -63,7 +63,7 @@ echo
 
 # Global vars for functions
 is_canal_enabled=false
-commandOutput=("Start")
+commandOutput=()
 # Functions
 
 # args:
@@ -99,9 +99,9 @@ function lookFor() {
 checkResponse() {
   result=$( grep -e "$2" "$1" )
   if [ -n "$result" ]; then
-      $commandOutput += "$3 Test Succeeded"
+      $commandOutput += ("$3 Test Succeeded")
   else
-      $commandOutput += "$3 Test Failed"
+      $commandOutput += ("$3 Test Failed")
   fi
   lookFor $4 
   $1 >> $LOGFILE
